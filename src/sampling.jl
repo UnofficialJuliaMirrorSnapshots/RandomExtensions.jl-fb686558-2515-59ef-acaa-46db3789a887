@@ -44,23 +44,17 @@ Sampler(RNG::Type{<:AbstractRNG}, d::Union{UniformWrap,UniformType}, n::Repetiti
 
 ## floats
 
-### override def from Random
-
-Sampler(RNG::Type{<:AbstractRNG}, ::Type{T}, n::Repetition) where {T<:AbstractFloat} =
-    Sampler(RNG, CloseOpen01(T), n)
-
-for CO in (:CloseOpen01, :CloseOpen12)
-    @eval Sampler(::Type{<:AbstractRNG}, I::$CO{BigFloat}, ::Repetition) =
-        Random.SamplerBigFloat{Random.$CO{BigFloat}}(precision(BigFloat))
-end
-
 ### fall-back on Random definitions
 
-rand(r::AbstractRNG, ::SamplerTrivial{CloseOpen01{T}}) where {T} =
-    rand(r, SamplerTrivial(Random.CloseOpen01{T}()))
+for CO in (:CloseOpen01, :CloseOpen12)
+    @eval begin
+        Sampler(RNG::Type{<:AbstractRNG}, ::$CO{T}, n::Repetition) where {T} =
+            Sampler(RNG, Random.$CO{T}(), n)
 
-rand(r::AbstractRNG, ::SamplerTrivial{CloseOpen12{T}}) where {T} =
-    rand(r, SamplerTrivial(Random.CloseOpen12{T}()))
+        Sampler(::Type{<:AbstractRNG}, ::$CO{BigFloat}, ::Repetition) =
+            Random.SamplerBigFloat{Random.$CO{BigFloat}}(precision(BigFloat))
+    end
+end
 
 ### new intervals 01
 
